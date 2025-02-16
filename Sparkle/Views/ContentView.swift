@@ -9,110 +9,149 @@ struct ContentView: View {
     @State private var showSettings = false
     @Query(sort: \Chat.createdAt, order: .reverse) private var chats: [Chat]
     @State private var selectedChat: Chat?
-    @State private var showSidebar = false
+    @State private var columnVisibility = NavigationSplitViewVisibility.automatic
     
     init(azureService: AzureOpenAIService) {
         _viewModel = StateObject(wrappedValue: ChatViewModel(azureService: azureService))
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             ZStack {
-                if selectedChat == nil {
-                    sidebarContent
-                        .toolbar {
-                            ToolbarItem(placement: .principal) {
-                                Image(systemName: "sparkle")
-                                    .font(.title2)
-                            }
-                        }
-                } else {
-                    chatView(for: selectedChat!)
-                        .navigationTitle(selectedChat!.title)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarLeading) {
-                                Button {
-                                    withAnimation(.easeOut(duration: 0.25)) {
-                                        showSidebar.toggle()
-                                    }
-                                } label: {
-                                    Image(systemName: "line.3.horizontal")
-                                }
-                            }
-                            ToolbarItem(placement: .primaryAction) {
-                                Button(action: createNewChat) {
-                                    Image(systemName: "square.and.pencil")
-                                }
-                            }
-                        }
-                }
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.BG,
+                        colorScheme == .dark ? .black : .white
+                    ]),
+                    startPoint: .top,
+                    endPoint: colorScheme == .dark ? .init(x: 0.5, y: 0.30) : .init(x: 0.5, y: 0.22)
+                )
+                .ignoresSafeArea()
                 
-                // Overlay sidebar
-                // This seems to be a bit hacky, but I found no other way to archive this with SwiftUI
-                if showSidebar {
-                    GeometryReader { geometry in
-                        if showSidebar {
-                            Color.black.opacity(0.3)
-                                .ignoresSafeArea()
-                                .transition(.opacity.animation(.none))
-                                .onTapGesture {
-                                    showSidebar = false
-                                }
-                        }
-                        
-                        HStack(spacing: 0) {
-                            sidebarContent
-                                .frame(width: min(geometry.size.width * 0.75, 400))
-                                .background(Color(.systemBackground))
-                                .offset(x: showSidebar ? 0 : -geometry.size.width)
-                            
-                            Spacer()
+                List(selection: $selectedChat) {
+                    Button(action: createNewChat) {
+                        Label("New Chat", systemImage: "plus")
+                            .font(.headline)
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
+                    }
+                    .listRowBackground(Color.primary.opacity(0.1))
+                    .buttonStyle(.borderless)
+                    
+                    if !chats.isEmpty {
+                        Section {
+                            ForEach(chats) { chat in
+                                chatRow(for: chat)
+                                    .tag(chat)
+                            }
+                            .onDelete(perform: deleteChats)
+                        } header: {
+                            Text("Recent Chats")
+                                .foregroundColor(colorScheme == .dark ? .white : .black)
+                                .font(.subheadline)
+                                .textCase(nil)
                         }
                     }
+                    
+                    Section {
+                        Button(action: { showSettings = true }) {
+                            Label("Setup Sparkle", systemImage: "gear")
+                                .foregroundColor(colorScheme == .dark ? .white : .black)
+                        }
+                        .listRowBackground(Color.primary.opacity(0.1))
+                    }
                 }
+                .scrollContentBackground(.hidden)
+            }
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Image(systemName: "sparkle")
+                        .font(.title2)
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
+                }
+            }
+            .navigationDestination(isPresented: $showSettings) {
+                SettingsView()
+            }
+        } detail: {
+            if let chat = selectedChat {
+                chatView(for: chat)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationTitle(chat.title)
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button(action: createNewChat) {
+                                Image(systemName: "square.and.pencil")
+                            }
+                        }
+                    }
+            } else {
+                ContentUnavailableView {
+                    VStack(spacing: 20) {
+                        Circle()
+                            .fill(Color.primary.opacity(0.1))
+                            .frame(width: 80, height: 80)
+                            .overlay(
+                                Image(systemName: "sparkle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.primary)
+                            )
+                        
+                        Text("Welcome to Sparkle")
+                            .font(.title2)
+                            .fontWeight(.medium)
+                        
+                        Text("Start a new conversation or select an existing chat")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        Button(action: createNewChat) {
+                            Text("New Chat")
+                                .font(.headline)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                    }
+                    .padding()
+                }
+                .background(Color(.systemBackground))
             }
         }
         .onAppear {
-            if selectedChat == nil && chats.isEmpty {
+            if selectedChat == nil && !chats.isEmpty {
+                selectedChat = chats.first
+            } else if chats.isEmpty {
                 createNewChat()
             }
         }
     }
     
-    private var sidebarContent: some View {
-        List {
-            Button(action: createNewChat) {
-                Label("New Chat", systemImage: "plus")
-            }
-            .buttonStyle(.borderless)
-            
-            if !chats.isEmpty {
-                Section("Chats") {
-                    ForEach(chats) { chat in
-                        Label(chat.title, systemImage: "message")
-                            .lineLimit(1)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selectedChat = chat
-                                showSidebar = false
-                            }
-                    }
-                    .onDelete(perform: deleteChats)
+    private func chatRow(for chat: Chat) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(chat.title)
+                    .font(.headline)
+                    .foregroundColor(colorScheme == .dark ? .white : .black)
+                
+                if let lastMessage = chat.messages.last {
+                    Text(lastMessage.content)
+                        .font(.subheadline)
+                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .black.opacity(0.7))
+                        .lineLimit(1)
                 }
             }
             
-            Section {
-                Button(action: {
-                    showSettings = true
-                    showSidebar = false
-                }) {
-                    Label("Settings", systemImage: "gear")
-                }
+            Spacer()
+            
+            if let timestamp = chat.messages.last?.timestamp {
+                Text(timestamp, style: .time)
+                    .font(.caption2)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6))
             }
         }
-        .navigationDestination(isPresented: $showSettings) {
-            SettingsView()
-        }
+        .padding(.vertical, 4)
+        .listRowBackground(Color.primary.opacity(0.1))
     }
     
     private func chatView(for chat: Chat) -> some View {
@@ -137,9 +176,7 @@ struct ContentView: View {
                     isInputFocused = false
                 }
             )
-            .onChange(of: chat.messages.count) { oldCount, newCount in
-                scrollToBottom(proxy: proxy)
-            }
+            .onChange(of: chat.messages.count) { scrollToBottom(proxy: proxy) }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScrollToBottom"))) { _ in
                 scrollToBottom(proxy: proxy)
             }
@@ -153,7 +190,7 @@ struct ContentView: View {
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(colorScheme == .dark ? Color.gray.opacity(0.2) : Color.gray.opacity(0.1))
+                                .fill(Color.primary.opacity(0.1))
                         )
                         .disabled(viewModel.isLoading)
                     
@@ -168,9 +205,7 @@ struct ContentView: View {
                 }
                 .padding()
             }
-            .background(
-                colorScheme == .dark ? Color.black : Color.white
-            )
+            .background(colorScheme == .dark ? Color.black : .white)
         }
     }
     
@@ -186,7 +221,6 @@ struct ContentView: View {
         let newChat = Chat()
         modelContext.insert(newChat)
         selectedChat = newChat
-        showSidebar = false
     }
     
     private func deleteChats(at offsets: IndexSet) {
@@ -202,9 +236,4 @@ struct ContentView: View {
     private func sendMessage(in chat: Chat) {
         viewModel.sendMessage(in: chat)
     }
-}
-
-#Preview {
-    ContentView(azureService: AzureOpenAIService())
-        .modelContainer(for: Chat.self, inMemory: true)
 }
