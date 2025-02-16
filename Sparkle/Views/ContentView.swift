@@ -57,7 +57,7 @@ struct ContentView: View {
                         Button(action: viewModel.sendMessage) {
                             Image(systemName: "arrow.up.circle.fill")
                                 .font(.system(size: 30))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.accentColor)
                         }
                         .disabled(viewModel.inputMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
                     }
