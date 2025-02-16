@@ -1,32 +1,12 @@
-//
-//  SparkleApp.swift
-//  Sparkle
-//
-//  Created by Philip Brembeck on 16.02.25.
-//
-
 import SwiftUI
-import SwiftData
 
 @main
 struct SparkleApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
+    @StateObject private var settingsViewModel = SettingsViewModel()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(azureService: AzureOpenAIService(settings: settingsViewModel.settings))
         }
-        .modelContainer(sharedModelContainer)
     }
 }

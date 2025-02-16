@@ -1,10 +1,3 @@
-//
-//  Item.swift
-//  Sparkle
-//
-//  Created by Philip Brembeck on 16.02.25.
-//
-
 import Foundation
 import SwiftData
 
