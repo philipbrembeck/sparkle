@@ -20,7 +20,7 @@ struct ContentView: View {
                         }
                         .padding(.vertical)
                     }
-                    .onChange(of: viewModel.messages.count) { _ in
+                    .onChange(of: viewModel.messages.count) { oldCount, newCount in
                         scrollToBottom(proxy: proxy)
                     }
                     .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScrollToBottom"))) { _ in

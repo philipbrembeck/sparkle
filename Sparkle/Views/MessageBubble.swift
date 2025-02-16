@@ -63,7 +63,7 @@ struct MessageBubble: View {
             }
         }
         .padding(.horizontal)
-        .onChange(of: message.content) { _ in
+        .onChange(of: message.content) { oldContent, newContent in
             withAnimation {
                 NotificationCenter.default.post(
                     name: NSNotification.Name("ScrollToBottom"),
