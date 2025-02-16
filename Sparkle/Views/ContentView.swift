@@ -128,30 +128,35 @@ struct ContentView: View {
     }
     
     private func chatRow(for chat: Chat) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(chat.title)
-                    .font(.headline)
-                    .foregroundColor(colorScheme == .dark ? .white : .black)
+            HStack(spacing: 12) {
+                Image(systemName: "message")
+                    .font(.system(size: 24))
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .black.opacity(0.7))
+                    .frame(width: 32)
                 
-                if let lastMessage = chat.messages.last {
-                    Text(lastMessage.content)
-                        .font(.subheadline)
-                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .black.opacity(0.7))
-                        .lineLimit(1)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(chat.title)
+                        .font(.headline)
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
+                    
+                    if let lastMessage = chat.messages.last {
+                        Text(lastMessage.content)
+                            .font(.subheadline)
+                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .black.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                }
+                
+                Spacer()
+                
+                if let timestamp = chat.messages.last?.timestamp {
+                    Text(timestamp, style: .time)
+                        .font(.caption2)
+                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6))
                 }
             }
-            
-            Spacer()
-            
-            if let timestamp = chat.messages.last?.timestamp {
-                Text(timestamp, style: .time)
-                    .font(.caption2)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6))
-            }
-        }
-        .padding(.vertical, 4)
-        .listRowBackground(Color.primary.opacity(0.1))
+            .padding(.vertical, 4)
+            .listRowBackground(Color.primary.opacity(0.1))
     }
     
     private func chatView(for chat: Chat) -> some View {
