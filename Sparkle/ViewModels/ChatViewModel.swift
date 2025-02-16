@@ -5,47 +5,75 @@ class ChatViewModel: ObservableObject {
     @Published var inputMessage = ""
     @Published var isLoading = false
     
-    private let azureService: AzureOpenAIService
+    let azureService: AzureOpenAIService
     
     init(azureService: AzureOpenAIService) {
         self.azureService = azureService
     }
     
-    func sendMessage() {
+    func generateTitle(for chat: Chat, firstMessage: String) async {
+        let prompt = "Based on this first message, generate a very short and concise title (max 4 words) for this chat conversation: \"\(firstMessage)\""
+        
+        do {
+            var generatedTitle = ""
+            try await azureService.streamChat(message: prompt) { content in
+                generatedTitle = content
+            }
+            
+            // Clean up the title (remove quotes if present)
+            generatedTitle = generatedTitle.trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            
+            await MainActor.run {
+                chat.title = generatedTitle
+            }
+        } catch {
+            print("Failed to generate title: \(error)")
+        }
+    }
+    
+    func sendMessage(in chat: Chat) {
         guard !inputMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
         let userMessage = ChatMessage(content: inputMessage, isUser: true, timestamp: Date())
-        messages.append(userMessage)
+        chat.messages.append(userMessage)
         
         let messageToSend = inputMessage
         inputMessage = ""
         isLoading = true
         
+        // Check if this is the first message and generate a title
+        if chat.messages.count == 1 {
+            Task {
+                await generateTitle(for: chat, firstMessage: messageToSend)
+            }
+        }
+        
         // Create an initial assistant message for streaming
         let assistantMessage = ChatMessage(content: "", isUser: false, timestamp: Date(), isStreaming: true)
-        messages.append(assistantMessage)
+        chat.messages.append(assistantMessage)
         
         Task {
             do {
                 try await azureService.streamChat(message: messageToSend) { content in
                     Task { @MainActor in
-                        if let index = self.messages.indices.last {
-                            self.messages[index].content = content
+                        if let index = chat.messages.indices.last {
+                            chat.messages[index].content = content
                         }
                     }
                 }
                 
                 await MainActor.run {
-                    if let index = self.messages.indices.last {
-                        self.messages[index].isStreaming = false
+                    if let index = chat.messages.indices.last {
+                        chat.messages[index].isStreaming = false
                     }
                     isLoading = false
                 }
             } catch {
                 await MainActor.run {
-                    if let index = self.messages.indices.last {
-                        self.messages[index].content = "Error: \(error.localizedDescription)"
-                        self.messages[index].isStreaming = false
+                    if let index = chat.messages.indices.last {
+                        chat.messages[index].content = "Error: \(error.localizedDescription)"
+                        chat.messages[index].isStreaming = false
                     }
                     isLoading = false
                 }
