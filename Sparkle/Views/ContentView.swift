@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel: ChatViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @FocusState private var isInputFocused: Bool
     
     init(azureService: AzureOpenAIService) {
         _viewModel = StateObject(wrappedValue: ChatViewModel(azureService: azureService))
@@ -13,6 +14,13 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 ScrollViewReader { proxy in
                     ScrollView {
+                        Color.clear
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                isInputFocused = false
+                            }
+                        
                         LazyVStack(spacing: 24) {
                             ForEach(viewModel.messages) { message in
                                 MessageBubble(message: message)
@@ -20,6 +28,11 @@ struct ContentView: View {
                         }
                         .padding(.vertical)
                     }
+                    .simultaneousGesture(
+                        DragGesture().onChanged { _ in
+                            isInputFocused = false
+                        }
+                    )
                     .onChange(of: viewModel.messages.count) { oldCount, newCount in
                         scrollToBottom(proxy: proxy)
                     }
@@ -32,6 +45,7 @@ struct ContentView: View {
                     Divider()
                     HStack(spacing: 12) {
                         TextField("Message...", text: $viewModel.inputMessage, axis: .vertical)
+                            .focused($isInputFocused)
                             .textFieldStyle(.plain)
                             .padding(12)
                             .background(

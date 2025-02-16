@@ -1,13 +1,26 @@
 import Foundation
 
-class AzureOpenAIService {
-    private let settings: AzureSettings
+class AzureOpenAIService: ObservableObject {
+    @Published private var settings: AzureSettings
     
-    init(settings: AzureSettings) {
-        self.settings = settings
+    init() {
+        let defaults = UserDefaults.standard
+        self.settings = AzureSettings(
+            baseEndpoint: defaults.string(forKey: AzureSettings.baseEndpointKey) ?? "",
+            deploymentName: defaults.string(forKey: AzureSettings.deploymentNameKey) ?? "",
+            apiKey: defaults.string(forKey: AzureSettings.apiKeyKey) ?? ""
+        )
+    }
+    
+    func updateSettings(_ newSettings: AzureSettings) {
+        self.settings = newSettings
     }
     
     func streamChat(message: String, onReceive: @escaping (String) -> Void) async throws {
+        guard !settings.baseEndpoint.isEmpty && !settings.deploymentName.isEmpty && !settings.apiKey.isEmpty else {
+            throw NSError(domain: "AzureOpenAIService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Please configure Azure OpenAI settings first"])
+        }
+        
         guard let url = settings.fullEndpointURL else {
             throw URLError(.badURL)
         }
@@ -38,14 +51,14 @@ class AzureOpenAIService {
         var streamedContent = ""
         for try await line in bytes.lines {
             guard line.hasPrefix("data: ") else { continue }
-        
-        let data = line.dropFirst(6).data(using: .utf8)
-        guard let data = data,
-              let response = try? JSONDecoder().decode(StreamResponse.self, from: data),
-              let content = response.choices.first?.delta.content else { continue }
-              
-        streamedContent += content
-        onReceive(streamedContent)
+            
+            let data = line.dropFirst(6).data(using: .utf8)
+            guard let data = data,
+                  let response = try? JSONDecoder().decode(StreamResponse.self, from: data),
+                  let content = response.choices.first?.delta.content else { continue }
+            
+            streamedContent += content
+            onReceive(streamedContent)
         }
     }
 }
