@@ -88,7 +88,7 @@ struct ElementView: View {
         case let text as Markdown.Text:
             return text.string
         case let code as CodeBlock:
-            return code.code ?? ""
+            return code.code
         default:
             var result = ""
             for child in markup.children {
