@@ -14,21 +14,23 @@ class ChatViewModel: ObservableObject {
     func generateTitle(for chat: Chat, firstMessage: String) async {
         let prompt = "Based on this first message, generate a very short and concise title (max 4 words) for this chat conversation: \"\(firstMessage)\""
         
+        var finalTitle = ""
         do {
-            var generatedTitle = ""
             try await azureService.streamChat(message: prompt) { content in
-                generatedTitle = content
+                finalTitle = content
             }
             
-            // Clean up the title (remove quotes if present)
-            generatedTitle = generatedTitle.trimmingCharacters(in: .whitespaces)
+            let cleanedTitle = finalTitle.trimmingCharacters(in: .whitespaces)
                 .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
             
             await MainActor.run {
-                chat.title = generatedTitle
+                chat.title = cleanedTitle
             }
         } catch {
             print("Failed to generate title: \(error)")
+            await MainActor.run {
+                chat.title = "New Chat"
+            }
         }
     }
     

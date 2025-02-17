@@ -54,13 +54,13 @@ struct ContentView: View {
                     
                     Section {
                         Button(action: { showSettings = true }) {
-                            Label("Setup Sparkle", systemImage: "gear")
+                            Label("Setup Sparkle with Azure OpenAI", systemImage: "gearshape")
                                 .foregroundColor(colorScheme == .dark ? .white : .black)
                         }
                         .listRowBackground(Color.primary.opacity(0.1))
                     }
+                    .scrollContentBackground(.hidden)
                 }
-                .scrollContentBackground(.hidden)
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {

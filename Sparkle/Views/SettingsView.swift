@@ -22,7 +22,7 @@ struct SettingsView: View {
             
             Section(footer: Text("Example Base Endpoint: https://your-resource.openai.azure.com")) {
                 if let url = viewModel.settings.fullEndpointURL {
-                    Text("Full URL Preview:")
+                    Text("Full URL Preview")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(url.absoluteString)
