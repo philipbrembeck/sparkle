@@ -10,6 +10,10 @@ A native iOS app for chatting with Azure OpenAI's GPT models. Built with SwiftUI
 > [!NOTE]
 > This project is a learning resource for me for working with SwiftUI, Azure OpenAI, and real-time streaming. While functional, it's intended as an educational example rather than a production-ready application.
 
+## OTA Installation (Unsigned)
+
+The App is available unsigned as an IPA on [diawi](https://i.diawi.com/AkE4D7). If you have a paid developer account, you might be able to sign it.
+
 ## Prerequisites
 
 - iOS 18.2+
