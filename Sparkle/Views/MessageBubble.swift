@@ -14,33 +14,39 @@ struct MessageBubble: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    MarkdownText(content: message.content)
-                        .padding(12)
-                        .background(Color.secondary.opacity(0.1))
-                        .foregroundColor(.primary)
-                        .cornerRadius(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .overlay(
-                            Group {
-                                if message.isStreaming {
-                                    HStack {
-                                        Text(message.content)
-                                            .opacity(0)
-                                            .overlay(
-                                                Rectangle()
-                                                    .fill(Color.secondary)
-                                                    .frame(width: 2)
-                                                    .opacity(0.5)
-                                                    .offset(x: -4),
-                                                alignment: .trailing
-                                            )
+                    if message.isStreaming && message.content.isEmpty {
+                        TypingIndicator()
+                            .padding(12)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(12)
+                    } else {
+                        MarkdownText(content: message.content)
+                            .padding(12)
+                            .background(Color.secondary.opacity(0.1))
+                            .foregroundColor(.primary)
+                            .cornerRadius(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .overlay(
+                                Group {
+                                    if message.isStreaming {
+                                        HStack {
+                                            Text(message.content)
+                                                .opacity(0)
+                                                .overlay(
+                                                    Rectangle()
+                                                        .fill(Color.secondary)
+                                                        .frame(width: 2)
+                                                        .opacity(0.5)
+                                                        .offset(x: -4),
+                                                    alignment: .trailing
+                                                )
+                                        }
                                     }
                                 }
-                            }
-                        )
-                        .id(message.id) // Important for scrolling
+                            )
+                            .id(message.id)
+                    }
                 }
-                
                 Spacer()
             } else {
                 Spacer()

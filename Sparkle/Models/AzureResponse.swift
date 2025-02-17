@@ -18,3 +18,13 @@ struct Message: Codable {
     let role: String
     let content: String
 }
+
+struct AzureErrorResponse: Codable {
+    let error: AzureError
+    
+    struct AzureError: Codable {
+        let message: String
+        let type: String?
+        let code: String?
+    }
+}

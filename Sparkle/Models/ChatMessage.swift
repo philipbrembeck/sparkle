@@ -6,8 +6,10 @@ struct ChatMessage: Identifiable, Codable {
     let isUser: Bool
     let timestamp: Date
     var isStreaming: Bool = false
+    let endpointId: UUID?
+    let modelId: UUID?
     
     enum CodingKeys: String, CodingKey {
-        case id, content, isUser, timestamp, isStreaming
+        case id, content, isUser, timestamp, isStreaming, endpointId, modelId
     }
 }

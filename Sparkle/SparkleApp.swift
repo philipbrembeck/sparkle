@@ -15,19 +15,16 @@ struct SparkleApp: App {
         } catch {
             fatalError("Could not initialize SwiftData: \(error)")
         }
-        
-        _settingsViewModel = StateObject(wrappedValue: SettingsViewModel())
-        _azureService = StateObject(wrappedValue: AzureOpenAIService())
     }
     
     var body: some Scene {
         WindowGroup {
             ContentView(azureService: azureService)
-                .onChange(of: settingsViewModel.settings) { _, newSettings in
-                    azureService.updateSettings(newSettings)
-                }
                 .environmentObject(settingsViewModel)
                 .modelContainer(container)
+                .onChange(of: settingsViewModel.settings) { _, newSettings in
+                    azureService.settings = newSettings
+                }
         }
     }
 }

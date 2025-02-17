@@ -1,23 +1,69 @@
 import Foundation
 
-struct AzureSettings: Equatable {
-    var baseEndpoint: String
+struct AzureModelConfig: Codable, Identifiable, Equatable, Hashable {
+    let id: UUID
+    var name: String
     var deploymentName: String
-    var apiKey: String
+    var supportsStreaming: Bool
+    var isDefaultForTitles: Bool
+    var apiVersion: String
     
-    static let baseEndpointKey = "AzureBaseEndpoint"
-    static let deploymentNameKey = "AzureDeploymentName"
-    static let apiKeyKey = "AzureApiKey"
-    
-    var fullEndpointURL: URL? {
-        let cleanBaseEndpoint = baseEndpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let urlString = "\(cleanBaseEndpoint)/openai/deployments/\(deploymentName)/chat/completions?api-version=2024-02-15-preview"
-        return URL(string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString)
+    init(name: String, deploymentName: String, supportsStreaming: Bool, isDefaultForTitles: Bool, apiVersion: String = "2024-02-15-preview") {
+        self.id = UUID()
+        self.name = name
+        self.deploymentName = deploymentName
+        self.supportsStreaming = supportsStreaming
+        self.isDefaultForTitles = isDefaultForTitles
+        self.apiVersion = apiVersion
     }
     
-    static func == (lhs: AzureSettings, rhs: AzureSettings) -> Bool {
-        return lhs.baseEndpoint == rhs.baseEndpoint &&
-               lhs.deploymentName == rhs.deploymentName &&
-               lhs.apiKey == rhs.apiKey
+    static func == (lhs: AzureModelConfig, rhs: AzureModelConfig) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+struct AzureEndpoint: Codable, Identifiable, Equatable, Hashable {
+    let id: UUID
+    var name: String
+    var baseEndpoint: String
+    var apiKey: String
+    var models: [AzureModelConfig]
+    
+    init(name: String, baseEndpoint: String, apiKey: String, models: [AzureModelConfig]) {
+        self.id = UUID()
+        self.name = name
+        self.baseEndpoint = baseEndpoint
+        self.apiKey = apiKey
+        self.models = models
+    }
+    
+    var fullEndpointURL: (String, String) -> URL? {
+            { deploymentName, apiVersion in
+                let cleanBaseEndpoint = baseEndpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                let urlString = "\(cleanBaseEndpoint)/openai/deployments/\(deploymentName)/chat/completions?api-version=\(apiVersion)"
+                return URL(string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString)
+            }
+        }
+    
+    static func == (lhs: AzureEndpoint, rhs: AzureEndpoint) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+struct AzureSettings: Codable, Equatable {
+    var endpoints: [AzureEndpoint]
+    
+    static let settingsKey = "AzureSettings"
+    
+    static var defaultSettings: AzureSettings {
+        AzureSettings(endpoints: [])
     }
 }

@@ -59,8 +59,9 @@ struct ContentView: View {
                         }
                         .listRowBackground(Color.primary.opacity(0.1))
                     }
-                    .scrollContentBackground(.hidden)
                 }
+                .scrollContentBackground(.hidden)
+                .background(.clear)
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -186,31 +187,10 @@ struct ContentView: View {
                 scrollToBottom(proxy: proxy)
             }
             
-            VStack(spacing: 0) {
-                Divider()
-                HStack(spacing: 12) {
-                    TextField("Message...", text: $viewModel.inputMessage, axis: .vertical)
-                        .focused($isInputFocused)
-                        .textFieldStyle(.plain)
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.primary.opacity(0.1))
-                        )
-                        .disabled(viewModel.isLoading)
-                    
-                    Button {
-                        sendMessage(in: chat)
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.accentColor)
-                    }
-                    .disabled(viewModel.inputMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
-                }
-                .padding()
-            }
-            .background(colorScheme == .dark ? Color.black : .white)
+            ChatInputView(
+                viewModel: viewModel,
+                chat: chat
+            )
         }
     }
     
