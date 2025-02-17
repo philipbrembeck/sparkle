@@ -162,36 +162,53 @@ struct ContentView: View {
     
     private func chatView(for chat: Chat) -> some View {
         ScrollViewReader { proxy in
-            ScrollView {
-                Color.clear
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        isInputFocused = false
+            VStack(spacing: 0) {
+                ScrollView {
+                    Color.clear
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            hideKeyboard()
+                        }
+                    
+                    LazyVStack(spacing: 24) {
+                        ForEach(chat.messages) { message in
+                            MessageBubble(message: message)
+                        }
                     }
+                    .padding(.vertical)
+                }
+                .gesture(
+                    DragGesture()
+                        .onChanged { _ in
+                            hideKeyboard()
+                        }
+                )
                 
-                LazyVStack(spacing: 24) {
-                    ForEach(chat.messages) { message in
-                        MessageBubble(message: message)
+                ChatInputView(
+                    viewModel: viewModel,
+                    chat: chat
+                )
+            }
+            .onChange(of: chat.messages.count) { _, _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        proxy.scrollTo(chat.messages.last?.id, anchor: .bottom)
                     }
                 }
-                .padding(.vertical)
             }
-            .simultaneousGesture(
-                DragGesture().onChanged { _ in
-                    isInputFocused = false
-                }
-            )
-            .onChange(of: chat.messages.count) { scrollToBottom(proxy: proxy) }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScrollToBottom"))) { _ in
-                scrollToBottom(proxy: proxy)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        proxy.scrollTo(chat.messages.last?.id, anchor: .bottom)
+                    }
+                }
             }
-            
-            ChatInputView(
-                viewModel: viewModel,
-                chat: chat
-            )
         }
+    }
+
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
     
     private func scrollToBottom(proxy: ScrollViewProxy) {
@@ -220,5 +237,11 @@ struct ContentView: View {
     
     private func sendMessage(in chat: Chat) {
         viewModel.sendMessage(in: chat)
+    }
+}
+
+extension View {
+    func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
